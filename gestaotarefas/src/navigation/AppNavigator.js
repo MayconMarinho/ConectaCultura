@@ -1,0 +1,27 @@
+import React from 'react';
+import { NavigationContainer } from '@react-navigation/native';
+import { createStackNavigator } from '@react-navigation/stack';
+import HomeScreen from '../screens/HomeScreen';
+import MainScreen from '../screens/MainScreen';
+import FinanceScreen from '../screens/FinanceScreen';
+import LoginScreen from '../screens/LoginScreen';
+
+const Stack = createStackNavigator();
+
+export default function AppNavigator() {
+  return (
+    <NavigationContainer>
+      <Stack.Navigator
+        initialRouteName="Login"
+        screenOptions={{
+          headerShown: false, // 🔹 Vamos criar nosso próprio topo customizado
+        }}
+      >
+        <Stack.Screen name="Home" component={HomeScreen} />
+        <Stack.Screen name="Main" component={MainScreen} />
+        <Stack.Screen name="Finance" component={FinanceScreen} />
+        <Stack.Screen name="Login" component={LoginScreen} />
+      </Stack.Navigator>
+    </NavigationContainer>
+  );
+}

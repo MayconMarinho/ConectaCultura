@@ -1,0 +1,36 @@
+{
+  "expo": {
+    "name": "gestaotarefas",
+    "slug": "gestaotarefas",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/fundo.jpg",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#7B2CBF"
+    },
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "edgeToEdgeEnabled": true,
+      "package": "com.spyter.gestaotarefas"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "37e7f9b1-8f61-400d-bf8d-5863fd84ccbd"
+      }
+    },
+    "owner": "spyter"
+  }
+}
