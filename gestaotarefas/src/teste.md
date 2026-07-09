@@ -1,0 +1,1 @@
+Estamos testando o git para mandar no repositorio remoto utilizando o vs code
