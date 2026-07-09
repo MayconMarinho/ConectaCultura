@@ -3,7 +3,7 @@ import { View, Text, StyleSheet } from "react-native";
 export default function LoginScreen() {
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Tela de Admin</Text>
+      <Text style={styles.title}>Tela de Avisos</Text>
     </View>
   );
 }
