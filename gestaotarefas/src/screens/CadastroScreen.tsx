@@ -1,9 +1,12 @@
 import { View, Text, StyleSheet } from "react-native";
+import Footer from "../components/footer";
 
 export default function LoginScreen() {
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Tela de Avisos</Text>
+      <Text style={styles.title}>Tela de cadastro</Text>
+
+      <Footer />
     </View>
   );
 }

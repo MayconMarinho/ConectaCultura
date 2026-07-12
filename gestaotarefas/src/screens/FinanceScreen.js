@@ -2,6 +2,7 @@ import { View, Text, StyleSheet, TouchableOpacity, TextInput, Modal, ScrollView 
 import { Ionicons } from '@expo/vector-icons';
 import { useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import Footer from "../components/footer";
 
 
 
@@ -581,22 +582,7 @@ const formatMoney = (value) => {
   </View>
 </View>
 
-<View style={styles.footer}>
-  <TouchableOpacity style={styles.footerItem} onPress={() => navigation.navigate('Main')}>
-    <Ionicons name="home-outline" size={24} color="#ffffff" />
-    <Text style={styles.footerText}>Principal</Text>
-  </TouchableOpacity>
-
-  <TouchableOpacity style={styles.footerItem} onPress={() => navigation.navigate('Home')}>
-    <Ionicons name="list-outline" size={24} color="#ffffff" />
-    <Text style={styles.footerText}>Tarefas</Text>
-  </TouchableOpacity>
-
-  <TouchableOpacity style={styles.footerItem}>
-    <Ionicons name="wallet-outline" size={24} color="#1ecad3" />
-    <Text style={[styles.footerText, { color: '#1ecad3' }]}>Financeiro</Text>
-  </TouchableOpacity>
-</View>
+<Footer />
 
 
 
