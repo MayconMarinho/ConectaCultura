@@ -4,6 +4,8 @@ import { Ionicons } from '@expo/vector-icons';
 import DaySelector from '../components/DaySelector';
 import TaskInput from '../components/TaskInput';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { ScrollView } from "react-native";
+import Footer from "../components/footer";
 
 
 
@@ -149,25 +151,7 @@ useEffect(() => {
 />
 
 {/* 🔹 Rodapé moderno */}
-<View style={styles.footer}>
-  <TouchableOpacity
-  style={styles.footerItem}
-  onPress={() => navigation.navigate('Main')}
->
-  <Ionicons name="home-outline" size={24} color={theme.text} />
-  <Text style={styles.footerText}>Principal</Text>
-</TouchableOpacity>
-
-  <TouchableOpacity style={styles.footerItem} onPress={() => console.log('Ir para Tarefas')}>
-    <Ionicons name="list-outline" size={24} color={theme.accent} />
-    <Text style={[styles.footerText, { color: theme.accent }]}>Tarefas</Text>
-  </TouchableOpacity>
-
-  <TouchableOpacity style={styles.footerItem} onPress={() => navigation.navigate('Finance')}>
-    <Ionicons name="wallet-outline" size={24} color={theme.text} />
-    <Text style={styles.footerText}>Financeiro</Text>
-  </TouchableOpacity>
-</View>
+<Footer />
 
 
     </View>
@@ -261,39 +245,5 @@ taskCompleted: {
   textDecorationLine: 'line-through',
   color: '#888',
 },
-
-footer: {
-  position: 'absolute',
-  bottom: 0,
-  left: 0,
-  right: 0,
-  backgroundColor: '#2A2A2A', // cinza-chumbo
-  flexDirection: 'row',
-  justifyContent: 'space-around',
-  alignItems: 'center',
-  paddingVertical: 10,
-  borderTopWidth: 1,
-  borderTopColor: theme.primary,
-  elevation: 10,
-  shadowColor: '#000',
-  shadowOpacity: 0.3,
-  shadowOffset: { width: 0, height: -2 },
-  shadowRadius: 4,
-  paddingBottom: 40,
-},
-
-footerItem: {
-  alignItems: 'center',
-  justifyContent: 'center',
-  gap: 2,
-},
-
-footerText: {
-  fontSize: 12,
-  color: theme.text,
-  marginTop: 2,
-},
-
-
 
 });
