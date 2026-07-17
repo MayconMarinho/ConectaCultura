@@ -81,7 +81,7 @@ export default function HomeScreen({ navigation }: Props) {
           onPress={() => navigation.navigate('Ranking')}
         >
           <Ionicons
-            name="settings-outline"
+            name="trophy-outline"
             size={38}
             color={theme.accent}
           />
