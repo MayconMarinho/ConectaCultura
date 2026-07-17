@@ -1,14 +1,40 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   SafeAreaView,
   View,
- Text,
+  Text,
   StyleSheet,
   Image,
   TouchableOpacity,
+  Modal,
+  TextInput,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import Footer from "../components/footer";
+
+
+const selecionarImagem = async () => {
+  const permission =
+    await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+  if (!permission.granted) {
+    return;
+  }
+
+  const result = await ImagePicker.launchImageLibraryAsync({
+    mediaTypes: ImagePicker.MediaTypeOptions.Images,
+    allowsEditing: true,
+    aspect: [1, 1],
+    quality: 1,
+  });
+
+  if (!result.canceled) {
+    setEditUsuario({
+      ...editUsuario,
+      foto: result.assets[0].uri,
+    });
+  }
+};
 
 const theme = {
   primary: "#7B2CBF",
@@ -20,15 +46,18 @@ const theme = {
 };
 
 export default function PerfilScreen() {
-  const usuario = {
-    nome: "João Pedro da Silva",
-    email: "joao.silva@empresa.com",
-    setor: "Tecnologia da Informação",
-    cargo: "Desenvolvedor Mobile",
-    xp: 1450,
-    foto:
-      "https://i.pravatar.cc/300",
-  };
+const [usuario, setUsuario] = useState({
+  nome: "João Pedro da Silva",
+  email: "joao.silva@empresa.com",
+  setor: "Tecnologia da Informação",
+  cargo: "Desenvolvedor Mobile",
+  xp: 1450,
+  foto: "https://i.pravatar.cc/300",
+});
+
+const [modalVisible, setModalVisible] = useState(false);
+
+const [editUsuario, setEditUsuario] = useState(usuario);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -150,8 +179,12 @@ export default function PerfilScreen() {
 
       {/* BOTÕES */}
 
-      <TouchableOpacity style={styles.editButton}>
-
+      <TouchableOpacity
+  style={styles.editButton}
+  onPress={() => {
+    setEditUsuario(usuario);
+    setModalVisible(true);
+  }}>
         <Ionicons
           name="create-outline"
           size={22}
@@ -181,6 +214,120 @@ export default function PerfilScreen() {
       <Text style={styles.version}>
         Conecta Cultura • ALLTAK
       </Text>
+    
+    <Modal
+      visible={modalVisible}
+      animationType="slide"
+      transparent >
+
+      <View style={styles.modalOverlay}>
+
+        <View style={styles.modalContainer}>
+
+          <Text style={styles.modalTitle}>
+            Editar Perfil
+          </Text>
+
+          <View style={styles.photoContainer}>
+
+  <TouchableOpacity
+    style={styles.photoButton}
+    onPress={selecionarImagem}
+  >
+    <Image
+      source={{ uri: editUsuario.foto }}
+      style={styles.modalProfileImage}
+    />
+
+    <View style={styles.cameraIcon}>
+      <Ionicons
+        name="camera"
+        size={18}
+        color="#FFF"
+      />
+    </View>
+
+  </TouchableOpacity>
+
+  <Text style={styles.changePhoto}>
+    Alterar foto
+  </Text>
+
+</View>
+
+          <TextInput
+            style={styles.modalInput}
+            value={editUsuario.nome}
+            placeholder="Nome"
+            onChangeText={(text) =>
+              setEditUsuario({
+                ...editUsuario,
+                nome: text,
+              })
+            }
+          />
+
+          <TextInput
+            style={styles.modalInput}
+            value={editUsuario.email}
+            placeholder="Email"
+            onChangeText={(text) =>
+              setEditUsuario({
+                ...editUsuario,
+                email: text,
+              })
+            } />
+
+          <TextInput
+            style={styles.modalInput}
+            value={editUsuario.setor}
+            placeholder="Setor"
+            onChangeText={(text) =>
+              setEditUsuario({
+                ...editUsuario,
+                setor: text,
+              })
+            } />
+
+          <TextInput
+            style={styles.modalInput}
+            value={editUsuario.cargo}
+            placeholder="Cargo"
+            onChangeText={(text) =>
+              setEditUsuario({
+                ...editUsuario,
+                cargo: text,
+              })
+            } />
+
+          <View style={styles.modalButtons}>
+
+            <TouchableOpacity
+              style={styles.cancelButton}
+              onPress={() => setModalVisible(false)} >
+              <Text style={styles.cancelText}>
+                Cancelar
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.saveButton}
+              onPress={() => {
+                setUsuario(editUsuario);
+                setModalVisible(false);
+              }} >
+              <Text style={styles.saveText}>
+                Salvar
+              </Text>
+            </TouchableOpacity>
+
+          </View>
+
+        </View>
+
+      </View>
+
+    </Modal>
 
       <Footer />
 
@@ -364,5 +511,129 @@ const styles = StyleSheet.create({
     fontSize: 13,
     marginBottom: 20,
   },
+
+  /* ========================
+      Modal
+  ==========================*/
+
+  modalOverlay: {
+  flex: 1,
+  backgroundColor: "rgba(0,0,0,0.45)",
+  justifyContent: "center",
+  alignItems: "center",
+},
+
+modalContainer: {
+  width: "90%",
+  backgroundColor: theme.card,
+  borderRadius: 20,
+  padding: 25,
+
+  elevation: 10,
+  shadowColor: "#000",
+  shadowOpacity: 0.2,
+  shadowOffset: {
+    width: 0,
+    height: 4,
+  },
+  shadowRadius: 8,
+},
+
+modalTitle: {
+  fontSize: 22,
+  fontWeight: "bold",
+  color: theme.primary,
+  textAlign: "center",
+  marginBottom: 25,
+},
+
+modalInput: {
+  height: 55,
+  backgroundColor: "#F4F4F4",
+  borderRadius: 14,
+  borderWidth: 1,
+  borderColor: "#DDDDDD",
+  paddingHorizontal: 15,
+  marginBottom: 15,
+  fontSize: 16,
+  color: theme.text,
+},
+
+modalButtons: {
+  flexDirection: "row",
+  justifyContent: "space-between",
+  marginTop: 10,
+},
+
+cancelButton: {
+  flex: 1,
+  height: 50,
+  borderWidth: 2,
+  borderColor: theme.primary,
+  borderRadius: 15,
+  justifyContent: "center",
+  alignItems: "center",
+  marginRight: 8,
+},
+
+saveButton: {
+  flex: 1,
+  height: 50,
+  backgroundColor: theme.primary,
+  borderRadius: 15,
+  justifyContent: "center",
+  alignItems: "center",
+  marginLeft: 8,
+},
+
+cancelText: {
+  color: theme.primary,
+  fontWeight: "bold",
+  fontSize: 16,
+},
+
+saveText: {
+  color: "#FFF",
+  fontWeight: "bold",
+  fontSize: 16,
+},
+
+photoContainer: {
+  alignItems: "center",
+  marginBottom: 20,
+},
+
+photoButton: {
+  position: "relative",
+},
+
+modalProfileImage: {
+  width: 110,
+  height: 110,
+  borderRadius: 55,
+  borderWidth: 3,
+  borderColor: theme.primary,
+},
+
+cameraIcon: {
+  position: "absolute",
+  bottom: 0,
+  right: 0,
+  backgroundColor: theme.primary,
+  width: 34,
+  height: 34,
+  borderRadius: 17,
+  justifyContent: "center",
+  alignItems: "center",
+  borderWidth: 2,
+  borderColor: "#FFF",
+},
+
+changePhoto: {
+  marginTop: 10,
+  color: theme.primary,
+  fontWeight: "600",
+  fontSize: 15,
+},
 
 });
