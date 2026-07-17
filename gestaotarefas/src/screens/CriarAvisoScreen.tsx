@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import {
   View,
   Text,
-  Modal,
   StyleSheet,
   FlatList,
   TextInput,
@@ -11,6 +10,7 @@ import {
   TouchableOpacity,
 } from "react-native";
 
+import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import Footer from "../components/footer";
 
@@ -34,7 +34,7 @@ interface Aviso {
   imagem: string;
 }
 
-export default function GerenciarAvisosScreen() {
+export default function GerenciarAvisosScreen({ navigation }: any) {
 
   const [modalAvisos, setModalAvisos] = useState(false);
 
@@ -99,17 +99,25 @@ export default function GerenciarAvisosScreen() {
   };
 
   return (
-  <View style={styles.container}>
+
+<SafeAreaView
+    style={styles.container}
+    edges={["top"]}
+>
+
+<View style={styles.content}>
 
     {/* Cabeçalho */}
     <View style={styles.header}>
-      <TouchableOpacity>
-        <Ionicons
-          name="arrow-back"
-          size={26}
-          color={theme.primary}
-        />
-      </TouchableOpacity>
+      <TouchableOpacity
+    onPress={() => navigation.goBack()}
+>
+    <Ionicons
+        name="arrow-back"
+        size={26}
+        color={theme.primary}
+    />
+</TouchableOpacity>
 
       <Text style={styles.title}>
         Gerenciar Avisos
@@ -153,10 +161,13 @@ export default function GerenciarAvisosScreen() {
 
     {/* Lista */}
     <FlatList
-      data={avisosFiltrados}
+    style={{ flex: 1 }}
+    data={avisosFiltrados}
       keyExtractor={(item) => item.id.toString()}
       showsVerticalScrollIndicator={false}
-      contentContainerStyle={{ paddingBottom: 30 }}
+      contentContainerStyle={{
+    paddingBottom: 140,
+}}
       renderItem={({ item }) => (
 
         <View style={styles.card}>
@@ -243,9 +254,11 @@ export default function GerenciarAvisosScreen() {
       )}
     />
 
+</View>
+
 <Footer />
 
-  </View>
+</SafeAreaView>
 
 );
 }
@@ -254,9 +267,13 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: theme.background,
+},
+
+content: {
+    flex: 1,
     paddingHorizontal: 20,
     paddingTop: 20,
-  },
+},
 
   header: {
     flexDirection: "row",

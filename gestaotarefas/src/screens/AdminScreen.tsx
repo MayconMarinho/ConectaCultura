@@ -34,6 +34,12 @@ interface Usuario {
   ativo: boolean;
 }
 
+interface Tarefa {
+  id: number;
+  titulo: string;
+  setor: string;
+}
+
 export default function AdminScreen({ navigation }: any) {
 
 
@@ -127,6 +133,73 @@ const excluirUsuario = (id: number) => {
       },
     ]
 
+  );
+
+};
+
+/* ===========================
+    GESTÃO DE ROTINAS
+=========================== */
+
+const [modalRotinas, setModalRotinas] = useState(false);
+
+const [pesquisaRotina, setPesquisaRotina] = useState("");
+
+const [tarefas, setTarefas] = useState<Tarefa[]>([
+  {
+    id: 1,
+    titulo: "Conferir EPI",
+    setor: "Picking",
+  },
+  {
+    id: 2,
+    titulo: "Organizar Bancada",
+    setor: "Packing",
+  },
+  {
+    id: 3,
+    titulo: "Realizar Auditoria",
+    setor: "Shipping",
+  },
+  {
+    id: 4,
+    titulo: "Limpeza do Setor",
+    setor: "Produção",
+  },
+]);
+
+const tarefasFiltradas = tarefas.filter((tarefa) =>
+
+  tarefa.titulo
+    .toLowerCase()
+    .includes(pesquisaRotina.toLowerCase()) ||
+
+  tarefa.setor
+    .toLowerCase()
+    .includes(pesquisaRotina.toLowerCase())
+
+);
+
+const excluirTarefa = (id: number) => {
+
+  Alert.alert(
+    "Excluir tarefa",
+    "Deseja realmente excluir esta tarefa?",
+    [
+      {
+        text: "Cancelar",
+        style: "cancel",
+      },
+      {
+        text: "Excluir",
+        style: "destructive",
+        onPress: () => {
+          setTarefas((tarefas) =>
+            tarefas.filter((t) => t.id !== id)
+          );
+        },
+      },
+    ]
   );
 
 };
@@ -392,7 +465,7 @@ setModalUsuarios(true)
         <TouchableOpacity
           style={styles.menuButton}
           onPress={() =>
-            navigation.navigate("GerenciarAvisos")
+            navigation.navigate("CriarAviso")
           }
         >
 
@@ -422,9 +495,7 @@ setModalUsuarios(true)
 
         <TouchableOpacity
           style={styles.menuButton}
-          onPress={() =>
-            navigation.navigate("GestaoRotinas")
-          }
+          onPress={() => setModalRotinas(true)}
         >
 
           <View style={styles.menuLeft}>
@@ -595,6 +666,112 @@ setModalUsuarios(true)
               <Text style={styles.deleteButtonText}>
                 Excluir
               </Text>
+
+            </TouchableOpacity>
+
+          </View>
+
+        )}
+      />
+
+    </View>
+
+  </View>
+
+</Modal>
+
+<Modal
+  visible={modalRotinas}
+  animationType="slide"
+  transparent={true}
+>
+
+  <View style={styles.modalOverlay}>
+
+    <View style={styles.modalContainer}>
+
+      <View style={styles.modalHeader}>
+
+        <Text style={styles.modalTitle}>
+          Gestão de Rotinas
+        </Text>
+
+        <TouchableOpacity
+          onPress={() => setModalRotinas(false)}
+        >
+          <Ionicons
+            name="close"
+            size={30}
+            color="#333"
+          />
+        </TouchableOpacity>
+
+      </View>
+
+      <View style={styles.searchContainer}>
+
+        <Ionicons
+          name="search"
+          size={22}
+          color="#777"
+        />
+
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Pesquisar tarefa..."
+          value={pesquisaRotina}
+          onChangeText={setPesquisaRotina}
+        />
+
+      </View>
+
+      <TouchableOpacity
+        style={styles.newTaskButton}
+        onPress={() => {}}
+      >
+
+        <Ionicons
+          name="add-circle"
+          size={22}
+          color="#FFF"
+        />
+
+        <Text style={styles.newTaskText}>
+          Nova Tarefa
+        </Text>
+
+      </TouchableOpacity>
+
+      <FlatList
+        data={tarefasFiltradas}
+        keyExtractor={(item) => item.id.toString()}
+        showsVerticalScrollIndicator={false}
+        renderItem={({ item }) => (
+
+          <View style={styles.taskCard}>
+
+            <View>
+
+              <Text style={styles.taskTitle}>
+                {item.titulo}
+              </Text>
+
+              <Text style={styles.taskSector}>
+                Setor: {item.setor}
+              </Text>
+
+            </View>
+
+            <TouchableOpacity
+              style={styles.deleteMiniButton}
+              onPress={() => excluirTarefa(item.id)}
+            >
+
+              <Ionicons
+                name="trash-outline"
+                size={20}
+                color="#FFF"
+              />
 
             </TouchableOpacity>
 
@@ -997,5 +1174,67 @@ deleteButtonText: {
   fontSize: 16,
   fontWeight: "bold",
   marginLeft: 8,
+},
+
+/* ===========================
+      GESTÃO DE ROTINAS
+=========================== */
+
+newTaskButton: {
+  backgroundColor: theme.primary,
+  borderRadius: 12,
+  paddingVertical: 14,
+  marginBottom: 20,
+  flexDirection: "row",
+  justifyContent: "center",
+  alignItems: "center",
+},
+
+newTaskText: {
+  color: "#FFF",
+  fontSize: 16,
+  fontWeight: "bold",
+  marginLeft: 8,
+},
+
+taskCard: {
+  backgroundColor: "#FFF",
+  borderRadius: 15,
+  padding: 18,
+  marginBottom: 15,
+  flexDirection: "row",
+  justifyContent: "space-between",
+  alignItems: "center",
+
+  elevation: 3,
+
+  shadowColor: "#000",
+  shadowOpacity: 0.08,
+  shadowOffset: {
+    width: 0,
+    height: 2,
+  },
+  shadowRadius: 4,
+},
+
+taskTitle: {
+  fontSize: 18,
+  fontWeight: "bold",
+  color: theme.text,
+},
+
+taskSector: {
+  marginTop: 6,
+  color: theme.subtitle,
+  fontSize: 15,
+},
+
+deleteMiniButton: {
+  width: 45,
+  height: 45,
+  borderRadius: 12,
+  backgroundColor: "#D32F2F",
+  justifyContent: "center",
+  alignItems: "center",
 },
 });
