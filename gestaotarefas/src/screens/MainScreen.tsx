@@ -55,9 +55,8 @@ export default function HomeScreen({ navigation }: Props) {
 
       <Text style={styles.description}>
         Seja bem-vindo ao sistema da empresa.
-        Aqui você poderá acompanhar suas tarefas,
-        acessar suas informações de perfil e configurar
-        sua conta de forma rápida e prática.
+        Aqui voce terá acesso a suas tarefas de forma dinamica e muito divertida.
+        Voce podera participar de competições e ver sua performace de forma justa.
       </Text>
 
       {/* Botões */}
