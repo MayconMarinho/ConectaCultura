@@ -4,9 +4,13 @@ import {
   View,
   Text,
   StyleSheet,
+  TextInput,
   TouchableOpacity,
   ScrollView,
   Image,
+  FlatList,
+  Modal,
+  Alert
 } from "react-native";
 
 import { Ionicons } from "@expo/vector-icons";
@@ -21,7 +25,111 @@ const theme = {
   subtitle: "#666666",
 };
 
+interface Usuario {
+  id: number;
+  nome: string;
+  cargo: string;
+  setor: string;
+  xp: number;
+  ativo: boolean;
+}
+
 export default function AdminScreen({ navigation }: any) {
+
+
+  {/*Referente ao gerenciamento de usuários*/}
+  const [modalUsuarios, setModalUsuarios] = useState(false);
+
+const [pesquisa, setPesquisa] = useState("");
+
+const [usuarios, setUsuarios] = useState<Usuario[]>([
+  {
+    id: 1,
+    nome: "Maycon Marinho",
+    cargo: "Administrador",
+    setor: "Produção",
+    xp: 3250,
+    ativo: true,
+  },
+  {
+    id: 2,
+    nome: "João Pedro",
+    cargo: "Operador",
+    setor: "Packing",
+    xp: 2840,
+    ativo: true,
+  },
+  {
+    id: 3,
+    nome: "Maria Clara",
+    cargo: "Supervisor",
+    setor: "Shipping",
+    xp: 4125,
+    ativo: false,
+  },
+  {
+    id: 4,
+    nome: "Carlos Eduardo",
+    cargo: "Operador",
+    setor: "Picking",
+    xp: 1925,
+    ativo: true,
+  },
+  {
+    id: 5,
+    nome: "Fernanda Souza",
+    cargo: "Líder",
+    setor: "Produção",
+    xp: 3890,
+    ativo: true,
+  },
+]);
+
+const usuariosFiltrados = usuarios.filter((usuario) =>
+
+  usuario.nome
+    .toLowerCase()
+    .includes(pesquisa.toLowerCase()) ||
+
+  usuario.cargo
+    .toLowerCase()
+    .includes(pesquisa.toLowerCase()) ||
+
+  usuario.setor
+    .toLowerCase()
+    .includes(pesquisa.toLowerCase())
+
+);
+
+const excluirUsuario = (id: number) => {
+
+  Alert.alert(
+
+    "Excluir usuário",
+
+    "Deseja realmente excluir este usuário?",
+
+    [
+      {
+        text: "Cancelar",
+        style: "cancel",
+      },
+      {
+        text: "Excluir",
+        style: "destructive",
+        onPress: () => {
+
+          setUsuarios((usuarios) =>
+            usuarios.filter((u) => u.id !== id)
+          );
+
+        },
+      },
+    ]
+
+  );
+
+};
 
   /* ===========================
           DADOS MOCKADOS
@@ -253,8 +361,8 @@ export default function AdminScreen({ navigation }: any) {
         <TouchableOpacity
           style={styles.menuButton}
           onPress={() =>
-            navigation.navigate("GerenciarUsuarios")
-          }
+setModalUsuarios(true)
+}
         >
 
           <View style={styles.menuLeft}>
@@ -373,6 +481,133 @@ export default function AdminScreen({ navigation }: any) {
         />
 
       </ScrollView>
+
+      <Modal
+  visible={modalUsuarios}
+  animationType="slide"
+  transparent={true}
+>
+  <View style={styles.modalOverlay}>
+
+    <View style={styles.modalContainer}>
+
+      <View style={styles.modalHeader}>
+
+        <Text style={styles.modalTitle}>
+          Gerenciar Usuários
+        </Text>
+
+        <TouchableOpacity
+          onPress={() => setModalUsuarios(false)}
+        >
+          <Ionicons
+            name="close"
+            size={30}
+            color="#333"
+          />
+        </TouchableOpacity>
+
+      </View>
+
+      <View style={styles.searchContainer}>
+
+        <Ionicons
+          name="search"
+          size={22}
+          color="#777"
+        />
+
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Pesquisar colaborador..."
+          placeholderTextColor="#999"
+          value={pesquisa}
+          onChangeText={setPesquisa}
+        />
+
+      </View>
+
+      <FlatList
+        data={usuariosFiltrados}
+        keyExtractor={(item) => item.id.toString()}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{
+          paddingBottom: 30,
+        }}
+        renderItem={({ item }) => (
+
+          <View style={styles.userCard}>
+
+            <View style={styles.userInfo}>
+
+              <Ionicons
+                name="person-circle"
+                size={65}
+                color={theme.primary}
+              />
+
+              <View style={styles.userText}>
+
+                <Text style={styles.modalUserName}>
+                  {item.nome}
+                </Text>
+
+                <Text style={styles.userCargo}>
+                  {item.cargo}
+                </Text>
+
+                <Text style={styles.userSetor}>
+                  {item.setor}
+                </Text>
+
+                <Text style={styles.userXP}>
+                  ⭐ XP: {item.xp}
+                </Text>
+
+                <Text
+                  style={[
+                    styles.userStatus,
+                    {
+                      color: item.ativo
+                        ? "#4CAF50"
+                        : "#D32F2F",
+                    },
+                  ]}
+                >
+                  {item.ativo ? "🟢 Ativo" : "🔴 Desativado"}
+                </Text>
+
+              </View>
+
+            </View>
+
+            <TouchableOpacity
+              style={styles.deleteButton}
+              onPress={() => excluirUsuario(item.id)}
+            >
+
+              <Ionicons
+                name="trash-outline"
+                size={20}
+                color="#FFF"
+              />
+
+              <Text style={styles.deleteButtonText}>
+                Excluir
+              </Text>
+
+            </TouchableOpacity>
+
+          </View>
+
+        )}
+      />
+
+    </View>
+
+  </View>
+
+</Modal>
 
       <Footer />
 
@@ -627,4 +862,140 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     marginLeft: 10,
   },
+
+  /* ===========================
+        MODAL USUÁRIOS
+=========================== */
+
+modalOverlay: {
+  flex: 1,
+  backgroundColor: "rgba(0,0,0,0.45)",
+  justifyContent: "center",
+  alignItems: "center",
+},
+
+modalContainer: {
+  width: "92%",
+  height: "82%",
+  backgroundColor: "#FFFFFF",
+  borderRadius: 20,
+  padding: 20,
+},
+
+modalHeader: {
+  flexDirection: "row",
+  justifyContent: "space-between",
+  alignItems: "center",
+  marginBottom: 20,
+},
+
+modalTitle: {
+  fontSize: 24,
+  fontWeight: "bold",
+  color: theme.text,
+},
+
+/* ===========================
+        PESQUISA
+=========================== */
+
+searchContainer: {
+  flexDirection: "row",
+  alignItems: "center",
+  backgroundColor: "#F3F3F3",
+  borderRadius: 12,
+  paddingHorizontal: 15,
+  marginBottom: 20,
+},
+
+searchInput: {
+  flex: 1,
+  height: 50,
+  marginLeft: 10,
+  color: theme.text,
+  fontSize: 16,
+},
+
+/* ===========================
+        CARD USUÁRIO
+=========================== */
+
+userCard: {
+  backgroundColor: "#FFFFFF",
+  borderRadius: 18,
+  padding: 18,
+  marginBottom: 15,
+
+  elevation: 3,
+
+  shadowColor: "#000",
+  shadowOpacity: 0.08,
+  shadowOffset: {
+    width: 0,
+    height: 2,
+  },
+  shadowRadius: 4,
+},
+
+userInfo: {
+  flexDirection: "row",
+},
+
+userText: {
+  marginLeft: 15,
+  flex: 1,
+},
+
+modalUserName: {
+  fontSize: 18,
+  fontWeight: "bold",
+  color: theme.text,
+},
+
+userCargo: {
+  marginTop: 3,
+  fontSize: 15,
+  color: "#666",
+},
+
+userSetor: {
+  marginTop: 2,
+  fontSize: 15,
+  color: "#888",
+},
+
+userXP: {
+  marginTop: 8,
+  fontSize: 16,
+  fontWeight: "bold",
+  color: "#F9A825",
+},
+
+userStatus: {
+  marginTop: 6,
+  fontWeight: "bold",
+  fontSize: 15,
+},
+
+/* ===========================
+        BOTÃO EXCLUIR
+=========================== */
+
+deleteButton: {
+  marginTop: 18,
+  backgroundColor: "#D32F2F",
+  borderRadius: 12,
+  paddingVertical: 12,
+
+  flexDirection: "row",
+  justifyContent: "center",
+  alignItems: "center",
+},
+
+deleteButtonText: {
+  color: "#FFFFFF",
+  fontSize: 16,
+  fontWeight: "bold",
+  marginLeft: 8,
+},
 });
