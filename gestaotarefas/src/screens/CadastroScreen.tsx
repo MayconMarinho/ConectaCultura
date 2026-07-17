@@ -28,6 +28,7 @@ export default function CadastroScreen({ navigation }: any) {
   const [matricula, setMatricula] = useState("");
   const [cpf, setCpf] = useState("");
   const [setor, setSetor] = useState("Produção");
+  const [cargo, setCargo] = useState("Operador");
   const [senha, setSenha] = useState("");
   const [confirmarSenha, setConfirmarSenha] = useState("");
 
@@ -191,6 +192,35 @@ export default function CadastroScreen({ navigation }: any) {
     <Picker.Item label="Expedição" value="Expedição" />
     <Picker.Item label="Qualidade" value="Qualidade" />
     <Picker.Item label="Administrativo" value="Administrativo" />
+  </Picker>
+
+</View>
+
+{/* Cargo */}
+
+<Text style={styles.label}>
+  Cargo
+</Text>
+
+<View style={styles.pickerContainer}>
+
+  <Ionicons
+    name="briefcase-outline"
+    size={22}
+    color={theme.primary}
+    style={{ marginLeft: 15 }}
+  />
+
+  <Picker
+    selectedValue={cargo}
+    style={styles.picker}
+    onValueChange={(itemValue) => setCargo(itemValue)}
+  >
+    <Picker.Item label="Operador" value="Operador" />
+    <Picker.Item label="Líder" value="Líder" />
+    <Picker.Item label="Supervisor" value="Supervisor" />
+    <Picker.Item label="Gerente" value="Gerente" />
+    <Picker.Item label="Administrador" value="Administrador" />
   </Picker>
 
 </View>
