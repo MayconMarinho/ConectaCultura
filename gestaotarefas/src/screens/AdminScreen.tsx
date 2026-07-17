@@ -132,7 +132,7 @@ const excluirUsuario = (id: number) => {
 };
 
   /* ===========================
-          DADOS MOCKADOS
+          DADOS SIMULADOS
   =========================== */
 
   const indicadores = {
