@@ -60,12 +60,7 @@ const menuItems: MenuItem[] = [
     icon: "person-circle-outline",
     screen: "Perfil",
   },
-  {
-    id: "7",
-    title: "Financeiro",
-    icon: "wallet-outline",
-    screen: "Finance",
-  },
+
   {
     id: "8",
     title: "Admin",
@@ -84,12 +79,7 @@ const menuItems: MenuItem[] = [
     icon: "person-add-outline",
     screen: "Cadastro",
   },
-  {
-    id: "11",
-    title: "Rotinas",
-    icon: "checkmark-circle-outline",
-    screen: "Home",
-  },
+
 ];
 
 export default function Footer() {

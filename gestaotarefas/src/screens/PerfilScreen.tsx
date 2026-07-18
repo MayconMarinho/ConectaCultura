@@ -6,6 +6,7 @@ import {
   StyleSheet,
   Image,
   TouchableOpacity,
+  ScrollView,
   Modal,
   TextInput,
 } from "react-native";
@@ -61,6 +62,11 @@ const [editUsuario, setEditUsuario] = useState(usuario);
 
   return (
     <SafeAreaView style={styles.container}>
+
+      <ScrollView
+  contentContainerStyle={styles.scrollContent}
+  showsVerticalScrollIndicator={false}
+>
 
       {/* HEADER */}
 
@@ -328,6 +334,8 @@ const [editUsuario, setEditUsuario] = useState(usuario);
       </View>
 
     </Modal>
+
+    </ScrollView>
 
       <Footer />
 
