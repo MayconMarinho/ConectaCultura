@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Picker } from "@react-native-picker/picker";
+import { supabase } from "../services/supabase";
 
 const theme = {
   primary: "#7B2CBF",
@@ -34,6 +35,60 @@ export default function CadastroScreen({ navigation }: any) {
 
   const [mostrarSenha, setMostrarSenha] = useState(false);
   const [mostrarConfirmacao, setMostrarConfirmacao] = useState(false);
+
+  const cadastrar = async () => {
+  if (
+    !nome ||
+    !email ||
+    !matricula ||
+    !cpf ||
+    !setor ||
+    !cargo ||
+    !senha ||
+    !confirmarSenha
+  ) {
+    alert("Preencha todos os campos.");
+    return;
+  }
+
+  if (senha !== confirmarSenha) {
+    alert("As senhas não conferem.");
+    return;
+  }
+
+  // Cria o usuário no Supabase Auth
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password: senha,
+  });
+
+  if (error) {
+    alert(error.message);
+    return;
+  }
+
+  // Salva os demais dados na tabela usuarios
+  const { error: erroTabela } = await supabase
+    .from("usuarios")
+    .insert({
+      id: data.user?.id,
+      nome,
+      email,
+      matricula,
+      cpf,
+      setor,
+      cargo,
+    });
+
+  if (erroTabela) {
+    alert(erroTabela.message);
+    return;
+  }
+
+  alert("Cadastro realizado com sucesso!");
+
+  navigation.navigate("Login");
+};
 
   return (
 
@@ -317,6 +372,7 @@ export default function CadastroScreen({ navigation }: any) {
 
           <TouchableOpacity
             style={styles.registerButton}
+            onPress={cadastrar}
           >
 
             <Ionicons
