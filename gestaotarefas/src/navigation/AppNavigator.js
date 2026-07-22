@@ -10,6 +10,8 @@ import CriarAvisoScreen from '../screens/CriarAvisoScreen';
 import GestaoRotinasScreen from '../screens/GestaoRotinasScreen';
 import PerfilScreen from '../screens/PerfilScreen';
 import RankingScreen from '../screens/RankingScreen';
+import CriarScreen from '../screens/CriarScreen';
+
 
 const Stack = createStackNavigator();
 
@@ -31,6 +33,7 @@ export default function AppNavigator() {
         <Stack.Screen name="GestaoRotinas" component={GestaoRotinasScreen} />
         <Stack.Screen name="Perfil" component={PerfilScreen} />
         <Stack.Screen name="Ranking" component={RankingScreen} />
+        <Stack.Screen name="Criar" component={CriarScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );
