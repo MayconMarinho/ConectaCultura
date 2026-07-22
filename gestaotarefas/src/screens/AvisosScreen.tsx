@@ -1,15 +1,19 @@
-import React, { useMemo, useState } from "react";
+import React, { useCallback, useState } from "react";
 import {
   SafeAreaView,
   View,
   Text,
   StyleSheet,
   Image,
- TextInput,
   FlatList,
+  ActivityIndicator,
 } from "react-native";
+
 import { Ionicons } from "@expo/vector-icons";
+import { useFocusEffect } from "@react-navigation/native";
+
 import Footer from "../components/footer";
+import { supabase } from "../services/supabase";
 
 const theme = {
   primary: "#7B2CBF",
@@ -20,84 +24,103 @@ const theme = {
   subtitle: "#777777",
 };
 
-const avisos = [
-  {
-    id: "1",
-    titulo: "Treinamento de Segurança",
-    descricao:
-      "Treinamento obrigatório para todos os colaboradores do setor Produção.",
-    data: "10/07/2026",
-    categoria: "Treinamento",
-  },
-  {
-    id: "2",
-    titulo: "Reunião Geral",
-    descricao:
-      "Apresentação dos resultados do semestre e alinhamento estratégico.",
-    data: "18/07/2026",
-    categoria: "Reunião",
-  },
-  {
-    id: "3",
-    titulo: "Campanha do Agasalho",
-    descricao:
-      "Doe roupas e cobertores até o final do mês.",
-    data: "20/07/2026",
-    categoria: "Campanha",
-  },
-  {
-    id: "4",
-    titulo: "Aniversariantes",
-    descricao:
-      "Confira os aniversariantes do mês e deixe sua mensagem.",
-    data: "01/07/2026",
-    categoria: "Comunicado",
-  },
-];
+interface Aviso {
+  id: number;
+  titulo: string;
+  descricao: string;
+  data: string;
+  tag: string;
+}
+
 export default function AvisosScreen() {
 
-  const [pesquisa, setPesquisa] = useState("");
+  const [avisos, setAvisos] = useState<Aviso[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const renderIcon = (categoria: string) => {
-    switch (categoria) {
-      case "Treinamento":
-        return "school-outline";
+  async function carregarAvisos() {
 
-      case "Reunião":
-        return "people-outline";
+    setLoading(true);
 
-      case "Campanha":
+    const { data, error } = await supabase
+      .from("avisos")
+      .select("*")
+      .order("data", { ascending: false });
+
+    if (error) {
+      console.log(error);
+    } else {
+      setAvisos(data as Aviso[]);
+    }
+
+    setLoading(false);
+  }
+
+  useFocusEffect(
+    useCallback(() => {
+      carregarAvisos();
+    }, [])
+  );
+
+  function renderIcon(tag: string) {
+
+    switch (tag) {
+
+      case "Informativo":
+        return "information-circle-outline";
+
+      case "Urgente":
+        return "warning-outline";
+
+      case "Evento":
+        return "calendar-outline";
+
+      case "Comunicado":
+        return "notifications-outline";
+
+      default:
         return "megaphone-outline";
 
-      default:
-        return "notifications-outline";
     }
-  };
 
-  const renderBadgeColor = (categoria: string) => {
-    switch (categoria) {
-      case "Treinamento":
+  }
+
+  function renderBadgeColor(tag: string) {
+
+    switch (tag) {
+
+      case "Informativo":
         return "#7B2CBF";
 
-      case "Reunião":
+      case "Urgente":
+        return "#EF4444";
+
+      case "Evento":
+        return "#00BFA6";
+
+      case "Comunicado":
         return "#2196F3";
 
-      case "Campanha":
-        return "#FF9800";
-
       default:
-        return "#00BFA6";
-    }
-  };
+        return "#7B2CBF";
 
-  const renderItem = ({ item }: any) => (
+    }
+
+  }
+
+  function formatarData(data: string) {
+
+    return new Date(data).toLocaleDateString("pt-BR");
+
+  }
+
+  const renderItem = ({ item }: { item: Aviso }) => (
 
     <View style={styles.card}>
 
       <View style={styles.iconContainer}>
 
         <Ionicons
-          name={renderIcon(item.categoria)}
+          name={renderIcon(item.tag)}
           size={30}
           color={theme.primary}
         />
@@ -111,7 +134,7 @@ export default function AvisosScreen() {
         </Text>
 
         <Text style={styles.data}>
-          {item.data}
+          {formatarData(item.data)}
         </Text>
 
         <Text style={styles.descricao}>
@@ -124,14 +147,13 @@ export default function AvisosScreen() {
             style={[
               styles.badge,
               {
-                backgroundColor:
-                  renderBadgeColor(item.categoria),
+                backgroundColor: renderBadgeColor(item.tag),
               },
             ]}
           >
 
             <Text style={styles.badgeText}>
-              {item.categoria}
+              {item.tag}
             </Text>
 
           </View>
@@ -144,7 +166,7 @@ export default function AvisosScreen() {
 
   );
 
-  return (
+    return (
 
     <SafeAreaView style={styles.container}>
 
@@ -170,29 +192,49 @@ export default function AvisosScreen() {
 
         </View>
 
-        {/* LISTA */}
+        {loading ? (
 
-        <FlatList
-          data={avisos}
-          keyExtractor={(item) => item.id}
-          renderItem={renderItem}
-          contentContainerStyle={styles.list}
-          showsVerticalScrollIndicator={false}
+          <View style={styles.loadingContainer}>
 
-          /*
-          ===================================================
+            <ActivityIndicator
+              size="large"
+              color={theme.primary}
+            />
 
-          FUTURAMENTE
+          </View>
 
-          Aqui continuará igual.
+        ) : (
 
-          Apenas substitua o array "avisos"
-          pelo retorno do PHP/MySQL.
+          <FlatList
+            data={avisos}
+            keyExtractor={(item) => item.id.toString()}
+            renderItem={renderItem}
+            contentContainerStyle={styles.list}
+            showsVerticalScrollIndicator={false}
+            ListEmptyComponent={
 
-          ===================================================
-          */
+              <View style={styles.emptyContainer}>
 
-        />
+                <Ionicons
+                  name="notifications-off-outline"
+                  size={60}
+                  color="#999"
+                />
+
+                <Text style={styles.emptyTitle}>
+                  Nenhum aviso encontrado
+                </Text>
+
+                <Text style={styles.emptyText}>
+                  Ainda não existe nenhum aviso publicado.
+                </Text>
+
+              </View>
+
+            }
+          />
+
+        )}
 
       </View>
 
@@ -203,7 +245,9 @@ export default function AvisosScreen() {
   );
 
 }
+
 const styles = StyleSheet.create({
+
   container: {
     flex: 1,
     backgroundColor: theme.background,
@@ -212,10 +256,6 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
   },
-
-  /* ===========================
-      HEADER
-  =========================== */
 
   header: {
     backgroundColor: theme.primary,
@@ -254,19 +294,38 @@ const styles = StyleSheet.create({
     fontSize: 15,
   },
 
-  /* ===========================
-      LISTA
-  =========================== */
-
   list: {
     paddingHorizontal: 20,
     paddingTop: 20,
     paddingBottom: 140,
   },
 
-  /* ===========================
-      CARD
-  =========================== */
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  emptyContainer: {
+    marginTop: 80,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  emptyTitle: {
+    marginTop: 20,
+    fontSize: 18,
+    fontWeight: "bold",
+    color: theme.text,
+  },
+
+  emptyText: {
+    marginTop: 10,
+    fontSize: 14,
+    color: theme.subtitle,
+    textAlign: "center",
+    paddingHorizontal: 30,
+  },
 
   card: {
     backgroundColor: theme.card,
@@ -320,19 +379,11 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
 
-  /* ===========================
-      RODAPÉ DO CARD
-  =========================== */
-
   cardFooter: {
     marginTop: 15,
     flexDirection: "row",
     alignItems: "center",
   },
-
-  /* ===========================
-      BADGE
-  =========================== */
 
   badge: {
     borderRadius: 20,
@@ -346,4 +397,5 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     fontSize: 12,
   },
+
 });
