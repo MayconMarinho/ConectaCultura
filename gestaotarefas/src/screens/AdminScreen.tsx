@@ -1,4 +1,8 @@
-import React, { useState } from "react";
+import React, {
+  useCallback,
+  useState,
+} from "react";
+
 import {
   SafeAreaView,
   View,
@@ -10,11 +14,21 @@ import {
   Image,
   FlatList,
   Modal,
-  Alert
+  Alert,
+  ActivityIndicator,
 } from "react-native";
 
 import { Ionicons } from "@expo/vector-icons";
+
+import {
+  useFocusEffect,
+} from "@react-navigation/native";
+
 import Footer from "../components/footer";
+
+import {
+  supabase,
+} from "../services/supabase";
 
 const theme = {
   primary: "#7B2CBF",
@@ -31,7 +45,6 @@ interface Usuario {
   cargo: string;
   setor: string;
   xp: number;
-  ativo: boolean;
 }
 
 interface Tarefa {
@@ -40,180 +53,95 @@ interface Tarefa {
   setor: string;
 }
 
-export default function AdminScreen({ navigation }: any) {
+export default function AdminScreen({
+  navigation,
+}: any) {
+  /* ===========================
+        INDICADORES
+  =========================== */
 
+  const [quantidadeUsuarios, setQuantidadeUsuarios] =
+    useState(0);
 
-  {/*Referente ao gerenciamento de usuários*/}
-  const [modalUsuarios, setModalUsuarios] = useState(false);
+  const [quantidadeAvisos, setQuantidadeAvisos] =
+    useState(0);
 
-const [pesquisa, setPesquisa] = useState("");
-
-const [usuarios, setUsuarios] = useState<Usuario[]>([
-  {
-    id: 1,
-    nome: "Maycon Marinho",
-    cargo: "Administrador",
-    setor: "Produção",
-    xp: 3250,
-    ativo: true,
-  },
-  {
-    id: 2,
-    nome: "João Pedro",
-    cargo: "Operador",
-    setor: "Packing",
-    xp: 2840,
-    ativo: true,
-  },
-  {
-    id: 3,
-    nome: "Maria Clara",
-    cargo: "Supervisor",
-    setor: "Shipping",
-    xp: 4125,
-    ativo: false,
-  },
-  {
-    id: 4,
-    nome: "Carlos Eduardo",
-    cargo: "Operador",
-    setor: "Picking",
-    xp: 1925,
-    ativo: true,
-  },
-  {
-    id: 5,
-    nome: "Fernanda Souza",
-    cargo: "Líder",
-    setor: "Produção",
-    xp: 3890,
-    ativo: true,
-  },
-]);
-
-const usuariosFiltrados = usuarios.filter((usuario) =>
-
-  usuario.nome
-    .toLowerCase()
-    .includes(pesquisa.toLowerCase()) ||
-
-  usuario.cargo
-    .toLowerCase()
-    .includes(pesquisa.toLowerCase()) ||
-
-  usuario.setor
-    .toLowerCase()
-    .includes(pesquisa.toLowerCase())
-
-);
-
-const excluirUsuario = (id: number) => {
-
-  Alert.alert(
-
-    "Excluir usuário",
-
-    "Deseja realmente excluir este usuário?",
-
-    [
-      {
-        text: "Cancelar",
-        style: "cancel",
-      },
-      {
-        text: "Excluir",
-        style: "destructive",
-        onPress: () => {
-
-          setUsuarios((usuarios) =>
-            usuarios.filter((u) => u.id !== id)
-          );
-
-        },
-      },
-    ]
-
-  );
-
-};
-
-/* ===========================
-    GESTÃO DE ROTINAS
-=========================== */
-
-const [modalRotinas, setModalRotinas] = useState(false);
-
-const [pesquisaRotina, setPesquisaRotina] = useState("");
-
-const [tarefas, setTarefas] = useState<Tarefa[]>([
-  {
-    id: 1,
-    titulo: "Conferir EPI",
-    setor: "Picking",
-  },
-  {
-    id: 2,
-    titulo: "Organizar Bancada",
-    setor: "Packing",
-  },
-  {
-    id: 3,
-    titulo: "Realizar Auditoria",
-    setor: "Shipping",
-  },
-  {
-    id: 4,
-    titulo: "Limpeza do Setor",
-    setor: "Produção",
-  },
-]);
-
-const tarefasFiltradas = tarefas.filter((tarefa) =>
-
-  tarefa.titulo
-    .toLowerCase()
-    .includes(pesquisaRotina.toLowerCase()) ||
-
-  tarefa.setor
-    .toLowerCase()
-    .includes(pesquisaRotina.toLowerCase())
-
-);
-
-const excluirTarefa = (id: number) => {
-
-  Alert.alert(
-    "Excluir tarefa",
-    "Deseja realmente excluir esta tarefa?",
-    [
-      {
-        text: "Cancelar",
-        style: "cancel",
-      },
-      {
-        text: "Excluir",
-        style: "destructive",
-        onPress: () => {
-          setTarefas((tarefas) =>
-            tarefas.filter((t) => t.id !== id)
-          );
-        },
-      },
-    ]
-  );
-
-};
+  const [carregandoIndicadores, setCarregandoIndicadores] =
+    useState(true);
 
   /* ===========================
-          DADOS SIMULADOS
+        GERENCIAMENTO DE USUÁRIOS
+  =========================== */
+
+  const [modalUsuarios, setModalUsuarios] =
+    useState(false);
+
+  const [pesquisa, setPesquisa] = useState("");
+
+  const [usuarios, setUsuarios] = useState<Usuario[]>(
+    []
+  );
+
+  const [carregandoUsuarios, setCarregandoUsuarios] =
+    useState(false);
+
+  const [excluindoUsuarioId, setExcluindoUsuarioId] =
+    useState<number | null>(null);
+
+  /* ===========================
+        GESTÃO DE ROTINAS
+  =========================== */
+
+  const [modalRotinas, setModalRotinas] =
+    useState(false);
+
+  const [pesquisaRotina, setPesquisaRotina] =
+    useState("");
+
+  const [tarefas, setTarefas] = useState<Tarefa[]>([
+    {
+      id: 1,
+      titulo: "Conferir EPI",
+      setor: "Picking",
+    },
+    {
+      id: 2,
+      titulo: "Organizar Bancada",
+      setor: "Packing",
+    },
+    {
+      id: 3,
+      titulo: "Realizar Auditoria",
+      setor: "Shipping",
+    },
+    {
+      id: 4,
+      titulo: "Limpeza do Setor",
+      setor: "Produção",
+    },
+  ]);
+
+  /* ===========================
+        USUÁRIO ADMINISTRADOR
+  =========================== */
+
+  const [usuario] = useState({
+    nome: "Maycon Marinho",
+    cargo: "Administrador",
+  });
+
+  /* ===========================
+        INDICADORES SIMULADOS
   =========================== */
 
   const indicadores = {
-    usuarios: 128,
-    avisos: 8,
     rotinas: 35,
     xpMedio: 745,
   };
+
+  /* ===========================
+        GRÁFICO SIMULADO
+  =========================== */
 
   const grafico = [
     {
@@ -235,28 +163,322 @@ const excluirTarefa = (id: number) => {
   ];
 
   /* ===========================
-            ESTADOS
+        CONTAR USUÁRIOS
   =========================== */
 
-  const [usuario] = useState({
-    nome: "Maycon Marinho",
-    cargo: "Administrador",
-  });
+  async function carregarQuantidadeUsuarios() {
+    const {
+      count,
+      error,
+    } = await supabase
+      .from("usuarios")
+      .select("id", {
+        count: "exact",
+        head: true,
+      });
+
+    if (error) {
+      console.log(
+        "Erro ao contar usuários:",
+        error
+      );
+
+      setQuantidadeUsuarios(0);
+      return;
+    }
+
+    setQuantidadeUsuarios(count ?? 0);
+  }
+
+  /* ===========================
+        CONTAR AVISOS
+  =========================== */
+
+  async function carregarQuantidadeAvisos() {
+    const {
+      count,
+      error,
+    } = await supabase
+      .from("avisos")
+      .select("id", {
+        count: "exact",
+        head: true,
+      });
+
+    if (error) {
+      console.log(
+        "Erro ao contar avisos:",
+        error
+      );
+
+      setQuantidadeAvisos(0);
+      return;
+    }
+
+    setQuantidadeAvisos(count ?? 0);
+  }
+
+  /* ===========================
+        CARREGAR USUÁRIOS
+  =========================== */
+
+  async function carregarUsuarios() {
+    setCarregandoUsuarios(true);
+
+    const {
+      data,
+      error,
+    } = await supabase
+      .from("usuarios")
+      .select(
+        `
+          id,
+          nome,
+          cargo,
+          setor,
+          xp
+        `
+      )
+      .order("nome", {
+        ascending: true,
+      });
+
+    if (error) {
+      console.log(
+        "Erro ao carregar usuários:",
+        error
+      );
+
+      Alert.alert(
+        "Erro",
+        "Não foi possível carregar os usuários cadastrados."
+      );
+
+      setUsuarios([]);
+      setCarregandoUsuarios(false);
+
+      return;
+    }
+
+    const usuariosFormatados: Usuario[] = (
+      data ?? []
+    ).map((item: any) => ({
+      id: item.id,
+      nome: item.nome ?? "Nome não informado",
+      cargo: item.cargo ?? "Cargo não informado",
+      setor: item.setor ?? "Setor não informado",
+      xp: Number(item.xp ?? 0),
+    }));
+
+    setUsuarios(usuariosFormatados);
+    setCarregandoUsuarios(false);
+  }
+
+  /* ===========================
+        CARREGAR INDICADORES
+  =========================== */
+
+  async function carregarIndicadores() {
+    setCarregandoIndicadores(true);
+
+    await Promise.all([
+      carregarQuantidadeUsuarios(),
+      carregarQuantidadeAvisos(),
+    ]);
+
+    setCarregandoIndicadores(false);
+  }
+
+  /* ===========================
+        ATUALIZAR AO ENTRAR
+        NA TELA
+  =========================== */
+
+  useFocusEffect(
+    useCallback(() => {
+      carregarIndicadores();
+    }, [])
+  );
+
+  /* ===========================
+        ABRIR MODAL DE USUÁRIOS
+  =========================== */
+
+  async function abrirModalUsuarios() {
+    setPesquisa("");
+    setModalUsuarios(true);
+
+    await carregarUsuarios();
+  }
+
+  /* ===========================
+        FECHAR MODAL
+  =========================== */
+
+  function fecharModalUsuarios() {
+    setPesquisa("");
+    setModalUsuarios(false);
+  }
+
+  /* ===========================
+        FILTRAR USUÁRIOS
+  =========================== */
+
+  const usuariosFiltrados = usuarios.filter(
+    (usuarioItem) => {
+      const textoPesquisa = pesquisa
+        .trim()
+        .toLowerCase();
+
+      if (textoPesquisa === "") {
+        return true;
+      }
+
+      const nome = usuarioItem.nome
+        .toLowerCase();
+
+      const cargo = usuarioItem.cargo
+        .toLowerCase();
+
+      const setor = usuarioItem.setor
+        .toLowerCase();
+
+      return (
+        nome.includes(textoPesquisa) ||
+        cargo.includes(textoPesquisa) ||
+        setor.includes(textoPesquisa)
+      );
+    }
+  );
+
+  /* ===========================
+        CONFIRMAR EXCLUSÃO
+  =========================== */
+
+  function confirmarExclusaoUsuario(
+    usuarioItem: Usuario
+  ) {
+    Alert.alert(
+      "Excluir usuário",
+      `Deseja realmente excluir o usuário "${usuarioItem.nome}"?`,
+      [
+        {
+          text: "Cancelar",
+          style: "cancel",
+        },
+        {
+          text: "Excluir",
+          style: "destructive",
+          onPress: () =>
+            excluirUsuario(usuarioItem.id),
+        },
+      ]
+    );
+  }
+
+  /* ===========================
+        EXCLUIR USUÁRIO
+  =========================== */
+
+  async function excluirUsuario(id: number) {
+    setExcluindoUsuarioId(id);
+
+    const {
+      error,
+    } = await supabase
+      .from("usuarios")
+      .delete()
+      .eq("id", id);
+
+    setExcluindoUsuarioId(null);
+
+    if (error) {
+      console.log(
+        "Erro ao excluir usuário:",
+        error
+      );
+
+      Alert.alert(
+        "Erro",
+        "Não foi possível excluir o usuário."
+      );
+
+      return;
+    }
+
+    setUsuarios((usuariosAtuais) =>
+      usuariosAtuais.filter(
+        (usuarioItem) => usuarioItem.id !== id
+      )
+    );
+
+    await carregarQuantidadeUsuarios();
+
+    Alert.alert(
+      "Sucesso",
+      "Usuário excluído com sucesso."
+    );
+  }
+
+  /* ===========================
+        FILTRAR TAREFAS
+  =========================== */
+
+  const tarefasFiltradas = tarefas.filter(
+    (tarefa) => {
+      const textoPesquisa = pesquisaRotina
+        .trim()
+        .toLowerCase();
+
+      return (
+        tarefa.titulo
+          .toLowerCase()
+          .includes(textoPesquisa) ||
+        tarefa.setor
+          .toLowerCase()
+          .includes(textoPesquisa)
+      );
+    }
+  );
+
+  /* ===========================
+        EXCLUIR TAREFA
+  =========================== */
+
+  function excluirTarefa(id: number) {
+    Alert.alert(
+      "Excluir tarefa",
+      "Deseja realmente excluir esta tarefa?",
+      [
+        {
+          text: "Cancelar",
+          style: "cancel",
+        },
+        {
+          text: "Excluir",
+          style: "destructive",
+          onPress: () => {
+            setTarefas((tarefasAtuais) =>
+              tarefasAtuais.filter(
+                (tarefa) => tarefa.id !== id
+              )
+            );
+          },
+        },
+      ]
+    );
+  }
 
   return (
-
     <SafeAreaView style={styles.container}>
-
       <ScrollView
         showsVerticalScrollIndicator={false}
       >
-
         {/* ===========================
                 HEADER
         =========================== */}
 
         <View style={styles.header}>
-
           <Image
             source={require("../../assets/logoprov.png")}
             style={styles.logo}
@@ -278,7 +500,6 @@ const excluirTarefa = (id: number) => {
           <Text style={styles.userRole}>
             {usuario.cargo}
           </Text>
-
         </View>
 
         {/* ===========================
@@ -286,55 +507,63 @@ const excluirTarefa = (id: number) => {
         =========================== */}
 
         <View style={styles.cardsContainer}>
-
           {/* Usuários */}
 
           <View style={styles.card}>
-
             <Ionicons
               name="people-outline"
               size={34}
               color="#7B2CBF"
             />
 
-            <Text style={styles.cardValue}>
-              {indicadores.usuarios}
-            </Text>
+            {carregandoIndicadores ? (
+              <ActivityIndicator
+                size="small"
+                color={theme.primary}
+                style={styles.cardLoading}
+              />
+            ) : (
+              <Text style={styles.cardValue}>
+                {quantidadeUsuarios}
+              </Text>
+            )}
 
             <Text style={styles.cardTitle}>
               Usuários
             </Text>
-
           </View>
 
           {/* Avisos */}
 
           <View style={styles.card}>
-
             <Ionicons
               name="notifications-outline"
               size={34}
               color="#2196F3"
             />
 
-            <Text style={styles.cardValue}>
-              {indicadores.avisos}
-            </Text>
+            {carregandoIndicadores ? (
+              <ActivityIndicator
+                size="small"
+                color="#2196F3"
+                style={styles.cardLoading}
+              />
+            ) : (
+              <Text style={styles.cardValue}>
+                {quantidadeAvisos}
+              </Text>
+            )}
 
             <Text style={styles.cardTitle}>
               Avisos
             </Text>
-
           </View>
-
         </View>
 
         <View style={styles.cardsContainer}>
-
           {/* Rotinas */}
 
           <View style={styles.card}>
-
             <Ionicons
               name="clipboard-outline"
               size={34}
@@ -348,13 +577,11 @@ const excluirTarefa = (id: number) => {
             <Text style={styles.cardTitle}>
               Rotinas
             </Text>
-
           </View>
 
           {/* XP Médio */}
 
           <View style={styles.card}>
-
             <Ionicons
               name="star-outline"
               size={34}
@@ -368,30 +595,24 @@ const excluirTarefa = (id: number) => {
             <Text style={styles.cardTitle}>
               XP Médio
             </Text>
-
           </View>
-
         </View>
 
-                {/* ===========================
+        {/* ===========================
                 GRÁFICO
         =========================== */}
 
         <View style={styles.chartContainer}>
-
-          <Text style={styles.sectionTitle}>
+          <Text style={styles.sectionTitleChart}>
             XP Médio por Setor
           </Text>
 
           {grafico.map((item, index) => (
-
             <View
               key={index}
               style={styles.chartItem}
             >
-
               <View style={styles.chartHeader}>
-
                 <Text style={styles.chartLabel}>
                   {item.setor}
                 </Text>
@@ -399,11 +620,9 @@ const excluirTarefa = (id: number) => {
                 <Text style={styles.chartValue}>
                   {item.xp}%
                 </Text>
-
               </View>
 
               <View style={styles.chartBackground}>
-
                 <View
                   style={[
                     styles.chartFill,
@@ -412,13 +631,9 @@ const excluirTarefa = (id: number) => {
                     },
                   ]}
                 />
-
               </View>
-
             </View>
-
           ))}
-
         </View>
 
         {/* ===========================
@@ -433,13 +648,9 @@ const excluirTarefa = (id: number) => {
 
         <TouchableOpacity
           style={styles.menuButton}
-          onPress={() =>
-setModalUsuarios(true)
-}
+          onPress={abrirModalUsuarios}
         >
-
           <View style={styles.menuLeft}>
-
             <Ionicons
               name="people-outline"
               size={28}
@@ -449,15 +660,13 @@ setModalUsuarios(true)
             <Text style={styles.menuText}>
               Gerenciar Usuários
             </Text>
-
           </View>
 
           <Ionicons
             name="chevron-forward"
             size={24}
-            color="#999"
+            color="#999999"
           />
-
         </TouchableOpacity>
 
         {/* Avisos */}
@@ -468,9 +677,7 @@ setModalUsuarios(true)
             navigation.navigate("CriarAviso")
           }
         >
-
           <View style={styles.menuLeft}>
-
             <Ionicons
               name="notifications-outline"
               size={28}
@@ -480,26 +687,24 @@ setModalUsuarios(true)
             <Text style={styles.menuText}>
               Gerenciar Avisos
             </Text>
-
           </View>
 
           <Ionicons
             name="chevron-forward"
             size={24}
-            color="#999"
+            color="#999999"
           />
-
         </TouchableOpacity>
 
         {/* Rotinas */}
 
         <TouchableOpacity
           style={styles.menuButton}
-          onPress={() => setModalRotinas(true)}
+          onPress={() =>
+            setModalRotinas(true)
+          }
         >
-
           <View style={styles.menuLeft}>
-
             <Ionicons
               name="clipboard-outline"
               size={28}
@@ -509,15 +714,13 @@ setModalUsuarios(true)
             <Text style={styles.menuText}>
               Gestão de Rotinas
             </Text>
-
           </View>
 
           <Ionicons
             name="chevron-forward"
             size={24}
-            color="#999"
+            color="#999999"
           />
-
         </TouchableOpacity>
 
         {/* ===========================
@@ -530,7 +733,6 @@ setModalUsuarios(true)
             navigation.replace("Login")
           }
         >
-
           <Ionicons
             name="log-out-outline"
             size={26}
@@ -540,258 +742,293 @@ setModalUsuarios(true)
           <Text style={styles.logoutText}>
             Encerrar Sessão
           </Text>
-
         </TouchableOpacity>
 
-        {/* Espaço para o Footer */}
-
-        <View
-          style={{
-            height: 120,
-          }}
-        />
-
+        <View style={styles.footerSpace} />
       </ScrollView>
 
+      {/* ===========================
+          MODAL DE USUÁRIOS
+      =========================== */}
+
       <Modal
-  visible={modalUsuarios}
-  animationType="slide"
-  transparent={true}
->
-  <View style={styles.modalOverlay}>
-
-    <View style={styles.modalContainer}>
-
-      <View style={styles.modalHeader}>
-
-        <Text style={styles.modalTitle}>
-          Gerenciar Usuários
-        </Text>
-
-        <TouchableOpacity
-          onPress={() => setModalUsuarios(false)}
-        >
-          <Ionicons
-            name="close"
-            size={30}
-            color="#333"
-          />
-        </TouchableOpacity>
-
-      </View>
-
-      <View style={styles.searchContainer}>
-
-        <Ionicons
-          name="search"
-          size={22}
-          color="#777"
-        />
-
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Pesquisar colaborador..."
-          placeholderTextColor="#999"
-          value={pesquisa}
-          onChangeText={setPesquisa}
-        />
-
-      </View>
-
-      <FlatList
-        data={usuariosFiltrados}
-        keyExtractor={(item) => item.id.toString()}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{
-          paddingBottom: 30,
-        }}
-        renderItem={({ item }) => (
-
-          <View style={styles.userCard}>
-
-            <View style={styles.userInfo}>
-
-              <Ionicons
-                name="person-circle"
-                size={65}
-                color={theme.primary}
-              />
-
-              <View style={styles.userText}>
-
-                <Text style={styles.modalUserName}>
-                  {item.nome}
+        visible={modalUsuarios}
+        animationType="slide"
+        transparent
+        onRequestClose={fecharModalUsuarios}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            <View style={styles.modalHeader}>
+              <View>
+                <Text style={styles.modalTitle}>
+                  Gerenciar Usuários
                 </Text>
 
-                <Text style={styles.userCargo}>
-                  {item.cargo}
+                <Text style={styles.modalSubtitle}>
+                  {quantidadeUsuarios} usuário(s) cadastrado(s)
                 </Text>
-
-                <Text style={styles.userSetor}>
-                  {item.setor}
-                </Text>
-
-                <Text style={styles.userXP}>
-                  ⭐ XP: {item.xp}
-                </Text>
-
-                <Text
-                  style={[
-                    styles.userStatus,
-                    {
-                      color: item.ativo
-                        ? "#4CAF50"
-                        : "#D32F2F",
-                    },
-                  ]}
-                >
-                  {item.ativo ? "🟢 Ativo" : "🔴 Desativado"}
-                </Text>
-
               </View>
 
+              <TouchableOpacity
+                style={styles.closeButton}
+                onPress={fecharModalUsuarios}
+              >
+                <Ionicons
+                  name="close"
+                  size={28}
+                  color="#333333"
+                />
+              </TouchableOpacity>
             </View>
 
-            <TouchableOpacity
-              style={styles.deleteButton}
-              onPress={() => excluirUsuario(item.id)}
-            >
-
+            <View style={styles.searchContainer}>
               <Ionicons
-                name="trash-outline"
-                size={20}
-                color="#FFF"
+                name="search"
+                size={22}
+                color="#777777"
               />
 
-              <Text style={styles.deleteButtonText}>
-                Excluir
-              </Text>
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Pesquisar colaborador..."
+                placeholderTextColor="#999999"
+                value={pesquisa}
+                onChangeText={setPesquisa}
+              />
 
-            </TouchableOpacity>
+              {pesquisa.length > 0 && (
+                <TouchableOpacity
+                  onPress={() => setPesquisa("")}
+                >
+                  <Ionicons
+                    name="close-circle"
+                    size={21}
+                    color="#999999"
+                  />
+                </TouchableOpacity>
+              )}
+            </View>
 
+            {carregandoUsuarios ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator
+                  size="large"
+                  color={theme.primary}
+                />
+
+                <Text style={styles.loadingText}>
+                  Carregando usuários...
+                </Text>
+              </View>
+            ) : (
+              <FlatList
+                data={usuariosFiltrados}
+                keyExtractor={(item) =>
+                  item.id.toString()
+                }
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={[
+                  styles.usersList,
+                  usuariosFiltrados.length === 0 &&
+                    styles.emptyList,
+                ]}
+                ListEmptyComponent={
+                  <View style={styles.emptyContainer}>
+                    <Ionicons
+                      name="people-outline"
+                      size={58}
+                      color="#999999"
+                    />
+
+                    <Text style={styles.emptyTitle}>
+                      Nenhum usuário encontrado
+                    </Text>
+
+                    <Text style={styles.emptyText}>
+                      Não existem usuários correspondentes à
+                      pesquisa realizada.
+                    </Text>
+                  </View>
+                }
+                renderItem={({ item }) => (
+                  <View style={styles.userCard}>
+                    <View style={styles.userInfo}>
+                      <Ionicons
+                        name="person-circle"
+                        size={65}
+                        color={theme.primary}
+                      />
+
+                      <View style={styles.userText}>
+                        <Text
+                          style={styles.modalUserName}
+                        >
+                          {item.nome}
+                        </Text>
+
+                        <Text style={styles.userCargo}>
+                          {item.cargo}
+                        </Text>
+
+                        <Text style={styles.userSetor}>
+                          {item.setor}
+                        </Text>
+
+                        <Text style={styles.userXP}>
+                          ⭐ XP: {item.xp}
+                        </Text>
+                      </View>
+                    </View>
+
+                    <TouchableOpacity
+                      style={[
+                        styles.deleteButton,
+                        excluindoUsuarioId === item.id &&
+                          styles.disabledButton,
+                      ]}
+                      disabled={
+                        excluindoUsuarioId === item.id
+                      }
+                      onPress={() =>
+                        confirmarExclusaoUsuario(item)
+                      }
+                    >
+                      {excluindoUsuarioId === item.id ? (
+                        <ActivityIndicator
+                          size="small"
+                          color="#FFFFFF"
+                        />
+                      ) : (
+                        <>
+                          <Ionicons
+                            name="trash-outline"
+                            size={20}
+                            color="#FFFFFF"
+                          />
+
+                          <Text
+                            style={
+                              styles.deleteButtonText
+                            }
+                          >
+                            Excluir
+                          </Text>
+                        </>
+                      )}
+                    </TouchableOpacity>
+                  </View>
+                )}
+              />
+            )}
           </View>
+        </View>
+      </Modal>
 
-        )}
-      />
+      {/* ===========================
+          MODAL DE ROTINAS
+      =========================== */}
 
-    </View>
-
-  </View>
-
-</Modal>
-
-<Modal
-  visible={modalRotinas}
-  animationType="slide"
-  transparent={true}
->
-
-  <View style={styles.modalOverlay}>
-
-    <View style={styles.modalContainer}>
-
-      <View style={styles.modalHeader}>
-
-        <Text style={styles.modalTitle}>
-          Gestão de Rotinas
-        </Text>
-
-        <TouchableOpacity
-          onPress={() => setModalRotinas(false)}
-        >
-          <Ionicons
-            name="close"
-            size={30}
-            color="#333"
-          />
-        </TouchableOpacity>
-
-      </View>
-
-      <View style={styles.searchContainer}>
-
-        <Ionicons
-          name="search"
-          size={22}
-          color="#777"
-        />
-
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Pesquisar tarefa..."
-          value={pesquisaRotina}
-          onChangeText={setPesquisaRotina}
-        />
-
-      </View>
-
-      <TouchableOpacity
-        style={styles.newTaskButton}
-        onPress={() => {}}
+      <Modal
+        visible={modalRotinas}
+        animationType="slide"
+        transparent
+        onRequestClose={() =>
+          setModalRotinas(false)
+        }
       >
-
-        <Ionicons
-          name="add-circle"
-          size={22}
-          color="#FFF"
-        />
-
-        <Text style={styles.newTaskText}>
-          Nova Tarefa
-        </Text>
-
-      </TouchableOpacity>
-
-      <FlatList
-        data={tarefasFiltradas}
-        keyExtractor={(item) => item.id.toString()}
-        showsVerticalScrollIndicator={false}
-        renderItem={({ item }) => (
-
-          <View style={styles.taskCard}>
-
-            <View>
-
-              <Text style={styles.taskTitle}>
-                {item.titulo}
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>
+                Gestão de Rotinas
               </Text>
 
-              <Text style={styles.taskSector}>
-                Setor: {item.setor}
-              </Text>
+              <TouchableOpacity
+                style={styles.closeButton}
+                onPress={() =>
+                  setModalRotinas(false)
+                }
+              >
+                <Ionicons
+                  name="close"
+                  size={28}
+                  color="#333333"
+                />
+              </TouchableOpacity>
+            </View>
 
+            <View style={styles.searchContainer}>
+              <Ionicons
+                name="search"
+                size={22}
+                color="#777777"
+              />
+
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Pesquisar tarefa..."
+                placeholderTextColor="#999999"
+                value={pesquisaRotina}
+                onChangeText={setPesquisaRotina}
+              />
             </View>
 
             <TouchableOpacity
-              style={styles.deleteMiniButton}
-              onPress={() => excluirTarefa(item.id)}
+              style={styles.newTaskButton}
+              onPress={() => {}}
             >
-
               <Ionicons
-                name="trash-outline"
-                size={20}
-                color="#FFF"
+                name="add-circle"
+                size={22}
+                color="#FFFFFF"
               />
 
+              <Text style={styles.newTaskText}>
+                Nova Tarefa
+              </Text>
             </TouchableOpacity>
 
+            <FlatList
+              data={tarefasFiltradas}
+              keyExtractor={(item) =>
+                item.id.toString()
+              }
+              showsVerticalScrollIndicator={false}
+              renderItem={({ item }) => (
+                <View style={styles.taskCard}>
+                  <View>
+                    <Text style={styles.taskTitle}>
+                      {item.titulo}
+                    </Text>
+
+                    <Text style={styles.taskSector}>
+                      Setor: {item.setor}
+                    </Text>
+                  </View>
+
+                  <TouchableOpacity
+                    style={styles.deleteMiniButton}
+                    onPress={() =>
+                      excluirTarefa(item.id)
+                    }
+                  >
+                    <Ionicons
+                      name="trash-outline"
+                      size={20}
+                      color="#FFFFFF"
+                    />
+                  </TouchableOpacity>
+                </View>
+              )}
+            />
           </View>
-
-        )}
-      />
-
-    </View>
-
-  </View>
-
-</Modal>
+        </View>
+      </Modal>
 
       <Footer />
-
     </SafeAreaView>
-
   );
-
 }
 
 const styles = StyleSheet.create({
@@ -812,10 +1049,8 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
     borderBottomLeftRadius: 35,
     borderBottomRightRadius: 35,
-
     elevation: 8,
-
-    shadowColor: "#000",
+    shadowColor: "#000000",
     shadowOpacity: 0.15,
     shadowOffset: {
       width: 0,
@@ -868,20 +1103,25 @@ const styles = StyleSheet.create({
 
   card: {
     width: "47%",
+    minHeight: 140,
     backgroundColor: "#FFFFFF",
     borderRadius: 18,
     paddingVertical: 22,
     alignItems: "center",
-
+    justifyContent: "center",
     elevation: 4,
-
-    shadowColor: "#000",
+    shadowColor: "#000000",
     shadowOpacity: 0.08,
     shadowOffset: {
       width: 0,
       height: 2,
     },
     shadowRadius: 4,
+  },
+
+  cardLoading: {
+    marginTop: 15,
+    marginBottom: 8,
   },
 
   cardValue: {
@@ -911,6 +1151,13 @@ const styles = StyleSheet.create({
     marginBottom: 15,
   },
 
+  sectionTitleChart: {
+    fontSize: 20,
+    fontWeight: "bold",
+    color: theme.text,
+    marginBottom: 20,
+  },
+
   /* ===========================
       GRÁFICO
   =========================== */
@@ -921,10 +1168,8 @@ const styles = StyleSheet.create({
     marginTop: 20,
     borderRadius: 18,
     padding: 18,
-
     elevation: 4,
-
-    shadowColor: "#000",
+    shadowColor: "#000000",
     shadowOpacity: 0.08,
     shadowOffset: {
       width: 0,
@@ -979,14 +1224,11 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     paddingVertical: 18,
     paddingHorizontal: 18,
-
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-
     elevation: 3,
-
-    shadowColor: "#000",
+    shadowColor: "#000000",
     shadowOpacity: 0.08,
     shadowOffset: {
       width: 0,
@@ -1017,14 +1259,11 @@ const styles = StyleSheet.create({
     marginTop: 25,
     borderRadius: 16,
     paddingVertical: 18,
-
     flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
-
     elevation: 5,
-
-    shadowColor: "#000",
+    shadowColor: "#000000",
     shadowOpacity: 0.15,
     shadowOffset: {
       width: 0,
@@ -1040,201 +1279,268 @@ const styles = StyleSheet.create({
     marginLeft: 10,
   },
 
+  footerSpace: {
+    height: 120,
+  },
+
   /* ===========================
-        MODAL USUÁRIOS
-=========================== */
+      MODAIS
+  =========================== */
 
-modalOverlay: {
-  flex: 1,
-  backgroundColor: "rgba(0,0,0,0.45)",
-  justifyContent: "center",
-  alignItems: "center",
-},
-
-modalContainer: {
-  width: "92%",
-  height: "82%",
-  backgroundColor: "#FFFFFF",
-  borderRadius: 20,
-  padding: 20,
-},
-
-modalHeader: {
-  flexDirection: "row",
-  justifyContent: "space-between",
-  alignItems: "center",
-  marginBottom: 20,
-},
-
-modalTitle: {
-  fontSize: 24,
-  fontWeight: "bold",
-  color: theme.text,
-},
-
-/* ===========================
-        PESQUISA
-=========================== */
-
-searchContainer: {
-  flexDirection: "row",
-  alignItems: "center",
-  backgroundColor: "#F3F3F3",
-  borderRadius: 12,
-  paddingHorizontal: 15,
-  marginBottom: 20,
-},
-
-searchInput: {
-  flex: 1,
-  height: 50,
-  marginLeft: 10,
-  color: theme.text,
-  fontSize: 16,
-},
-
-/* ===========================
-        CARD USUÁRIO
-=========================== */
-
-userCard: {
-  backgroundColor: "#FFFFFF",
-  borderRadius: 18,
-  padding: 18,
-  marginBottom: 15,
-
-  elevation: 3,
-
-  shadowColor: "#000",
-  shadowOpacity: 0.08,
-  shadowOffset: {
-    width: 0,
-    height: 2,
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.45)",
+    justifyContent: "center",
+    alignItems: "center",
   },
-  shadowRadius: 4,
-},
 
-userInfo: {
-  flexDirection: "row",
-},
+  modalContainer: {
+    width: "92%",
+    height: "82%",
+    backgroundColor: "#FFFFFF",
+    borderRadius: 20,
+    padding: 20,
+  },
 
-userText: {
-  marginLeft: 15,
-  flex: 1,
-},
+  modalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 20,
+  },
 
-modalUserName: {
-  fontSize: 18,
-  fontWeight: "bold",
-  color: theme.text,
-},
+  modalTitle: {
+    fontSize: 23,
+    fontWeight: "bold",
+    color: theme.text,
+  },
 
-userCargo: {
-  marginTop: 3,
-  fontSize: 15,
-  color: "#666",
-},
+  modalSubtitle: {
+    marginTop: 4,
+    color: theme.subtitle,
+    fontSize: 14,
+  },
 
-userSetor: {
-  marginTop: 2,
-  fontSize: 15,
-  color: "#888",
-},
+  closeButton: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: "#F3F3F3",
+    justifyContent: "center",
+    alignItems: "center",
+  },
 
-userXP: {
-  marginTop: 8,
-  fontSize: 16,
-  fontWeight: "bold",
-  color: "#F9A825",
-},
+  /* ===========================
+      PESQUISA
+  =========================== */
 
-userStatus: {
-  marginTop: 6,
-  fontWeight: "bold",
-  fontSize: 15,
-},
+  searchContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#F3F3F3",
+    borderRadius: 12,
+    paddingHorizontal: 15,
+    marginBottom: 20,
+  },
 
-/* ===========================
-        BOTÃO EXCLUIR
-=========================== */
+  searchInput: {
+    flex: 1,
+    height: 50,
+    marginLeft: 10,
+    marginRight: 8,
+    color: theme.text,
+    fontSize: 16,
+  },
 
-deleteButton: {
-  marginTop: 18,
-  backgroundColor: "#D32F2F",
-  borderRadius: 12,
-  paddingVertical: 12,
+  /* ===========================
+      CARREGAMENTO
+  =========================== */
 
-  flexDirection: "row",
-  justifyContent: "center",
-  alignItems: "center",
-},
+  loadingContainer: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
 
-deleteButtonText: {
-  color: "#FFFFFF",
-  fontSize: 16,
-  fontWeight: "bold",
-  marginLeft: 8,
-},
+  loadingText: {
+    marginTop: 12,
+    fontSize: 15,
+    color: theme.subtitle,
+  },
 
-/* ===========================
+  /* ===========================
+      LISTA DE USUÁRIOS
+  =========================== */
+
+  usersList: {
+    paddingBottom: 30,
+  },
+
+  emptyList: {
+    flexGrow: 1,
+  },
+
+  userCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 18,
+    padding: 18,
+    marginBottom: 15,
+    borderWidth: 1,
+    borderColor: "#EEEEEE",
+    elevation: 3,
+    shadowColor: "#000000",
+    shadowOpacity: 0.08,
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowRadius: 4,
+  },
+
+  userInfo: {
+    flexDirection: "row",
+  },
+
+  userText: {
+    marginLeft: 15,
+    flex: 1,
+  },
+
+  modalUserName: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: theme.text,
+  },
+
+  userCargo: {
+    marginTop: 3,
+    fontSize: 15,
+    color: "#666666",
+  },
+
+  userSetor: {
+    marginTop: 2,
+    fontSize: 15,
+    color: "#888888",
+  },
+
+  userXP: {
+    marginTop: 8,
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#F9A825",
+  },
+
+  /* ===========================
+      BOTÃO EXCLUIR
+  =========================== */
+
+  deleteButton: {
+    marginTop: 18,
+    minHeight: 48,
+    backgroundColor: "#D32F2F",
+    borderRadius: 12,
+    paddingVertical: 12,
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  deleteButtonText: {
+    color: "#FFFFFF",
+    fontSize: 16,
+    fontWeight: "bold",
+    marginLeft: 8,
+  },
+
+  disabledButton: {
+    opacity: 0.6,
+  },
+
+  /* ===========================
+      LISTA VAZIA
+  =========================== */
+
+  emptyContainer: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 25,
+  },
+
+  emptyTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: theme.text,
+    marginTop: 15,
+    textAlign: "center",
+  },
+
+  emptyText: {
+    fontSize: 14,
+    color: theme.subtitle,
+    marginTop: 8,
+    textAlign: "center",
+    lineHeight: 20,
+  },
+
+  /* ===========================
       GESTÃO DE ROTINAS
-=========================== */
+  =========================== */
 
-newTaskButton: {
-  backgroundColor: theme.primary,
-  borderRadius: 12,
-  paddingVertical: 14,
-  marginBottom: 20,
-  flexDirection: "row",
-  justifyContent: "center",
-  alignItems: "center",
-},
-
-newTaskText: {
-  color: "#FFF",
-  fontSize: 16,
-  fontWeight: "bold",
-  marginLeft: 8,
-},
-
-taskCard: {
-  backgroundColor: "#FFF",
-  borderRadius: 15,
-  padding: 18,
-  marginBottom: 15,
-  flexDirection: "row",
-  justifyContent: "space-between",
-  alignItems: "center",
-
-  elevation: 3,
-
-  shadowColor: "#000",
-  shadowOpacity: 0.08,
-  shadowOffset: {
-    width: 0,
-    height: 2,
+  newTaskButton: {
+    backgroundColor: theme.primary,
+    borderRadius: 12,
+    paddingVertical: 14,
+    marginBottom: 20,
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
   },
-  shadowRadius: 4,
-},
 
-taskTitle: {
-  fontSize: 18,
-  fontWeight: "bold",
-  color: theme.text,
-},
+  newTaskText: {
+    color: "#FFFFFF",
+    fontSize: 16,
+    fontWeight: "bold",
+    marginLeft: 8,
+  },
 
-taskSector: {
-  marginTop: 6,
-  color: theme.subtitle,
-  fontSize: 15,
-},
+  taskCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 15,
+    padding: 18,
+    marginBottom: 15,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    elevation: 3,
+    shadowColor: "#000000",
+    shadowOpacity: 0.08,
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowRadius: 4,
+  },
 
-deleteMiniButton: {
-  width: 45,
-  height: 45,
-  borderRadius: 12,
-  backgroundColor: "#D32F2F",
-  justifyContent: "center",
-  alignItems: "center",
-},
+  taskTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: theme.text,
+  },
+
+  taskSector: {
+    marginTop: 6,
+    color: theme.subtitle,
+    fontSize: 15,
+  },
+
+  deleteMiniButton: {
+    width: 45,
+    height: 45,
+    borderRadius: 12,
+    backgroundColor: "#D32F2F",
+    justifyContent: "center",
+    alignItems: "center",
+  },
 });
