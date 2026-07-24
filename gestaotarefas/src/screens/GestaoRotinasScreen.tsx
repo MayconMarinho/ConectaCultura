@@ -12,6 +12,9 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import Footer from "../components/footer";
+import { useFocusEffect } from "@react-navigation/native";
+import { useCallback } from "react";
+import { supabase } from "../services/supabase";
 
 const theme = {
   primary: "#7B2CBF",
@@ -29,50 +32,40 @@ const theme = {
 type Periodo = "Diário" | "Semanal" | "Mensal";
 
 interface Tarefa {
-  id: string;
-  periodo: Periodo;
-  titulo: string;
-  concluida: boolean;
+  id: number;
+  descricao: string;
+  setor: string;
+  tipo: Periodo;
+  pontuacao: number;
+  concluida?: boolean;
 }
 
-/* ===========================
-    DADOS (MOCK)
-
-    FUTURAMENTE:
-    Substitua este array pelo
-    retorno do PHP/MySQL.
-=========================== */
-
-const tarefasIniciais: Tarefa[] = [
-  // DIÁRIO
-  { id: "d1", periodo: "Diário", titulo: "Verificar novas sugestões dos colaboradores", concluida: false },
-  { id: "d2", periodo: "Diário", titulo: "Publicar comunicados urgentes", concluida: false },
-  { id: "d3", periodo: "Diário", titulo: "Responder dúvidas recebidas", concluida: false },
-  { id: "d4", periodo: "Diário", titulo: "Atualizar mural de avisos", concluida: false },
-  { id: "d5", periodo: "Diário", titulo: "Conferir eventos do dia", concluida: false },
-
-  // SEMANAL
-  { id: "s1", periodo: "Semanal", titulo: "Publicar comunicado semanal", concluida: false },
-  { id: "s2", periodo: "Semanal", titulo: "Atualizar calendário de eventos", concluida: false },
-  { id: "s3", periodo: "Semanal", titulo: "Divulgar campanha ativa", concluida: false },
-  { id: "s4", periodo: "Semanal", titulo: "Revisar conteúdos da plataforma", concluida: false },
-  { id: "s5", periodo: "Semanal", titulo: "Verificar indicadores de acesso", concluida: false },
-  { id: "s6", periodo: "Semanal", titulo: "Enviar lembrete de treinamentos", concluida: false },
-
-  // MENSAL
-  { id: "m1", periodo: "Mensal", titulo: "Escolher colaborador destaque", concluida: false },
-  { id: "m2", periodo: "Mensal", titulo: "Criar pesquisa de clima organizacional", concluida: false },
-  { id: "m3", periodo: "Mensal", titulo: "Publicar resultados das campanhas", concluida: false },
-  { id: "m4", periodo: "Mensal", titulo: "Atualizar missão, visão e valores (se necessário)", concluida: false },
-  { id: "m5", periodo: "Mensal", titulo: "Gerar relatório de engajamento", concluida: false },
-  { id: "m6", periodo: "Mensal", titulo: "Arquivar comunicados antigos", concluida: false },
-];
 
 const PERIODOS: Periodo[] = ["Diário", "Semanal", "Mensal"];
 
 export default function RotinasScreen() {
-  const [tarefas, setTarefas] = useState<Tarefa[]>(tarefasIniciais);
+  const [tarefas, setTarefas] = useState<Tarefa[]>([]);
   const [abaAtiva, setAbaAtiva] = useState<Periodo>("Diário");
+
+  async function carregarTarefas() {
+  const { data, error } = await supabase
+    .from("tarefas")
+    .select("*")
+    .order("id");
+
+  if (error) {
+    console.log(error);
+    return;
+  }
+
+  setTarefas(data || []);
+}
+
+useFocusEffect(
+  useCallback(() => {
+    carregarTarefas();
+  }, [])
+);
 
   /* Marca / desmarca uma tarefa */
   const toggleTarefa = (id: string) => {
@@ -83,9 +76,9 @@ export default function RotinasScreen() {
 
   /* Tarefas da aba selecionada */
   const tarefasDaAba = useMemo(
-    () => tarefas.filter((t) => t.periodo === abaAtiva),
-    [tarefas, abaAtiva]
-  );
+  () => tarefas.filter((t) => t.tipo === abaAtiva),
+  [tarefas, abaAtiva]
+);
 
   /* Progresso da aba atual */
   const total = tarefasDaAba.length;
@@ -107,7 +100,7 @@ export default function RotinasScreen() {
       <Text
         style={[styles.itemTexto, item.concluida && styles.itemTextoConcluido]}
       >
-        {item.titulo}
+        {item.descricao}
       </Text>
     </TouchableOpacity>
   );

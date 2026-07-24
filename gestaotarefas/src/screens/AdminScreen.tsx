@@ -49,8 +49,10 @@ interface Usuario {
 
 interface Tarefa {
   id: number;
-  titulo: string;
+  descricao: string;
   setor: string;
+  tipo: string;
+  pontuacao: number;
 }
 
 export default function AdminScreen({
@@ -88,38 +90,32 @@ export default function AdminScreen({
   const [excluindoUsuarioId, setExcluindoUsuarioId] =
     useState<number | null>(null);
 
-  /* ===========================
-        GESTÃO DE ROTINAS
-  =========================== */
+/* ===========================
+      GESTÃO DE ROTINAS
+=========================== */
 
-  const [modalRotinas, setModalRotinas] =
-    useState(false);
+const [modalRotinas, setModalRotinas] =
+  useState(false);
 
-  const [pesquisaRotina, setPesquisaRotina] =
-    useState("");
+const [pesquisaRotina, setPesquisaRotina] =
+  useState("");
 
-  const [tarefas, setTarefas] = useState<Tarefa[]>([
-    {
-      id: 1,
-      titulo: "Conferir EPI",
-      setor: "Picking",
-    },
-    {
-      id: 2,
-      titulo: "Organizar Bancada",
-      setor: "Packing",
-    },
-    {
-      id: 3,
-      titulo: "Realizar Auditoria",
-      setor: "Shipping",
-    },
-    {
-      id: 4,
-      titulo: "Limpeza do Setor",
-      setor: "Produção",
-    },
-  ]);
+const [tarefas, setTarefas] = useState<Tarefa[]>([]);
+
+async function carregarTarefas() {
+
+  const { data, error } = await supabase
+    .from("tarefas")
+    .select("*")
+    .order("id");
+
+  if (error) {
+    Alert.alert("Erro", error.message);
+    return;
+  }
+
+  setTarefas(data || []);
+}
 
   /* ===========================
         USUÁRIO ADMINISTRADOR
@@ -700,9 +696,10 @@ export default function AdminScreen({
 
         <TouchableOpacity
           style={styles.menuButton}
-          onPress={() =>
-            setModalRotinas(true)
-          }
+          onPress={async () => {
+            setModalRotinas(true);
+              await carregarTarefas();
+          }}
         >
           <View style={styles.menuLeft}>
             <Ionicons
@@ -975,8 +972,11 @@ export default function AdminScreen({
             </View>
 
             <TouchableOpacity
-              style={styles.newTaskButton}
-              onPress={() => {}}
+            style={styles.newTaskButton}
+            onPress={() => {
+              setModalRotinas(false);
+              navigation.navigate("NovaTarefa");
+            }}
             >
               <Ionicons
                 name="add-circle"
@@ -999,7 +999,7 @@ export default function AdminScreen({
                 <View style={styles.taskCard}>
                   <View>
                     <Text style={styles.taskTitle}>
-                      {item.titulo}
+                      {item.descricao}
                     </Text>
 
                     <Text style={styles.taskSector}>
